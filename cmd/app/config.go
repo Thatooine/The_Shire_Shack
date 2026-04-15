@@ -1,0 +1,93 @@
+package main
+
+import (
+	"github.com/rs/zerolog/log"
+	"github.com/spf13/viper"
+)
+
+// WARNING: SENSITIVE DATA
+//
+// This configuration contains secrets such as API keys, private keys, and database credentials.
+// The values below are hardcoded for local development and testing purposes ONLY.
+//
+// In a production environment, ALL sensitive values (FirebaseWebAPIKey, JWTPrivateKeyPEM,
+// MongoURI, RedisURI, etc.) MUST be sourced from a secure secret store (e.g. AWS Secrets
+// Manager, HashiCorp Vault, GCP Secret Manager) or injected via environment
+// variables — NEVER hardcoded in source code.
+
+func init() {
+	viper.MustBindEnv("FirebaseWebAPIKey", "FIREBASE_WEB_API_KEY")
+	viper.MustBindEnv("FirebaseServiceAccountPath", "FIREBASE_SERVICE_ACCOUNT_PATH")
+	viper.MustBindEnv("MongoURI", "MONGO_URI")
+	viper.MustBindEnv("RedisURI", "REDIS_URI")
+	viper.MustBindEnv("JWTPrivateKeyPEM", "JWT_PRIVATE_KEY_PEM")
+}
+
+// Config holds all non-secret app configuration
+type Config struct {
+	FirebaseServiceAccountPath string
+}
+
+// SecureConfig holds all secret application configuration
+type SecureConfig struct {
+	FirebaseWebAPIKey string
+	MongoURI          string
+	RedisURI          string
+	JWTPrivateKeyPEM  string
+}
+
+func GetConfig(configFileName string) (*Config, *SecureConfig) {
+	// set default configuration
+	viper.SetDefault("FirebaseWebAPIKey", "AIzaSyBuyyp4nhrFhHWR44mgCfV4hx5TJ8_HQvw")
+	viper.SetDefault("FirebaseServiceAccountPath", "bash_interview_shire_shack_firebase_service_account.json")
+	viper.SetDefault("MongoURI", "mongodb://localhost:27017")
+	viper.SetDefault("RedisURI", "localhost:6379")
+	viper.SetDefault("JWTPrivateKeyPEM", `-----BEGIN PRIVATE KEY-----
+MIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQCsTXWAE1NG6IVw
+8Q/QkUbSGsNaHAgmtAXHvR79BTXziNMWU7iKBDdpXNZN6zmKsWxcoAu4y5DVKk5p
+ws3fN6CBlRcDkoQJdMsOZUDcpgwlpCibzH6DfoGIa1/uhtnToNAkGVQdmlxTlVlW
+uKperh1iLR/U8Sn9OH1zdkndRLsBY3Cl+ZxdkQ2qPE2+YUUhgbR8dIBEBRsvx6j4
+bIVuEBSIck2q1Od/9CKeo+3otAHY0UvT55m7cYaDtwm/4uA1L62BwRKaY/3sHoA7
+ia6qdNPjPNDqUGjcgPezbTyZavvadMH+M2NG5X1l8EB7JXv849HjqRu8qhZTyBtL
+Ben63mStAgMBAAECggEAA6ffEtkWHr6HOka7FatHa+TKeUp3985BAyRlmGu4YdLo
+26PqGe+N92vTVjLj9SffizWQGhsjlwo/QKoz8QT+oFE3/EjrCUJTnpoSXrwdLN1H
+SUr08jhIaksQ7YAp9f4G/IUXDku8or9b9mWTo8+g6vjXII7/W5KLwtvjJFE1gImB
+KRCzO7XJ7Zv8/7/BAJFBzOb5t97RUR+iZvFwlDeH0lDj12AZIgb9CIzfoRrHMFLR
+ibds5PknPyrrbj974/FYpWx2GnO4MOnA5u2yVVGcg1iy+soZcE/1DXSngqe1lKVS
+CT1BiHO/nKZKRM7XePZaSorGRWF4JiMZY7YDM9cgVwKBgQDdjqjJXffK+JpfZ0Uh
+Q9QZ3F3vIZ4FJJxGiBTiYXQXW8d50ADaeUHWUCPJohHryByF+JInT7UsjEussxE4
+8cMW8gzSPZe2tJqlzq5pg6eGuwaTxun5zKxq3DuNBbi+TZsbIuL6gqfI0IV5dSmS
+wr/Lh3vYbpIGeS4qqIeopzI9LwKBgQDHFprfQg6aWOibof6jBjnTTQFfXKpvQQeS
+Mz+D0Hp5eX4nHTW3wwPYlq/573nOD5mkhu1/mmXfegMkIVzP9uJmXijgvDKdckFV
+MNHVHrYii1Bp+GWQN53NqX9ikD/1f8v+konM4dSRn0jquNK2LHT8KVnxcPAa+QZ3
+QGHrMS8c4wKBgQCB8D0FfFrra0n+Ue61R7aJRDjDGpA2q/YLV5wH+OfBG06uHlOh
+ziPSsUWL58Vi5wXzfIkbDSBQdCedrZeYMhIczvC+DOmBegKI4+Jed5w05FNDMBHh
+Myybr3YtiwGCerlQ/PDpwt7sY38kcJZlQFqD332+vXpe2Ys98YE+ZHCOeQKBgQCy
+8Q1op73qWwlPgW4W52yoECmwpeCGuMNuU+O9vW+nqVyLGYUD0yOs09v94JHxdTIa
+oC/tpj/0en1CRz5dqcDaU72YKW+w9lXklUm0rbL1H5S6esoGswaCKNvXImJqbWBU
+Qy/aWAywiqOGXXL+zLylPSGbknAtPjDilJquQ3neEwKBgQCaLVQ4erwjPlm1jF77
+cytJWpzYT+v3bEKgFQfNUSGANqcL3TS+vPztXhlatZw2+CSUPhpXThcW7QYMvWIo
+jRvMpx1lmh8Ygs1z15swWknJVUy1twdYKV/lyvjIn4VGdN8awBB5LhzPgDHiS0Q0
+BaJssnoLm4Izls0Q87EHQ93fFw==
+-----END PRIVATE KEY-----`)
+
+	if configFileName != "" {
+		viper.SetConfigFile(configFileName)
+		if err := viper.ReadInConfig(); err != nil {
+			log.Warn().Err(err).Msg("could not read configuration file")
+		}
+	}
+
+	// parse configuration
+	conf := &Config{}
+	if err := viper.Unmarshal(conf); err != nil {
+		log.Fatal().Err(err).Msg("could not unmarshal configuration")
+	}
+
+	secureConf := &SecureConfig{}
+	if err := viper.Unmarshal(secureConf); err != nil {
+		log.Fatal().Err(err).Msg("could not unmarshal secure configuration")
+	}
+
+	return conf, secureConf
+}

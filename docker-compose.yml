@@ -1,0 +1,16 @@
+version: '3.7'
+
+services:
+  mongoDB:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+volumes:
+  mongo_data:

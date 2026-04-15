@@ -1,0 +1,56 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+
+	pkgMongo "github.com/bash/the-dancing-pony-v2-rnyfbr/pkg/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+)
+
+const databaseName = "shire_shack"
+
+func main() {
+	ctx := context.Background()
+
+	client, err := mongo.Connect(options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err != nil {
+		log.Fatalf("failed to connect to mongo: %v", err)
+	}
+	defer client.Disconnect(ctx)
+
+	if err := client.Ping(ctx, nil); err != nil {
+		log.Fatalf("failed to ping mongo: %v", err)
+	}
+
+	createRootUser(ctx, client)
+	seedDishesAndRestaurant(ctx, client)
+	ensureIndexes(ctx, client)
+}
+
+func ensureIndexes(ctx context.Context, client *mongo.Client) {
+	indexes := []struct {
+		collection string
+		field      string
+		unique     bool
+	}{
+		{"users", "id", true},
+		{"users", "email", true},
+		{"restaurants", "id", true},
+		{"restaurants", "ownerID", true},
+		{"dishes", "id", true},
+		{"dishes", "restaurant_id", false},
+		{"ratings", "id", true},
+		{"ratings", "dish_id", false},
+	}
+
+	for _, idx := range indexes {
+		store := pkgMongo.NewStore(client, databaseName, idx.collection)
+		if err := store.EnsureIndex(ctx, idx.field, idx.unique); err != nil {
+			log.Fatalf("failed to create index on %s.%s: %v", idx.collection, idx.field, err)
+		}
+		fmt.Printf("index ensured: %s.%s (unique=%v)\n", idx.collection, idx.field, idx.unique)
+	}
+}
