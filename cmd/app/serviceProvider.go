@@ -19,12 +19,10 @@ import (
 	"github.com/bash/the-dancing-pony-v2-rnyfbr/pkg/users"
 	"github.com/go-jose/go-jose/v4"
 	"github.com/redis/go-redis/v9"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 	"google.golang.org/api/option"
 )
 
 type ServiceProviders struct {
-	MongoClient                          *mongo.Client
 	UserCreator                          users.UserCreatorService
 	UserReaderService                    users.UserReaderService
 	DishWriterService                    restaurants.DishWriterService
@@ -112,7 +110,6 @@ func NewServiceProviders(ctx context.Context, conf *Config, secureConf *SecureCo
 	emailPasswordAuthenticator := authenticationImpl.NewEmailAndPasswordAuthenticatorService(accessTokenCreator, userReader, secureConf.FirebaseWebAPIKey)
 
 	return &ServiceProviders{
-		MongoClient:                          mongoClient,
 		UserCreator:                          userNewCreator,
 		UserReaderService:                    userReader,
 		DishWriterService:                    dishWriter,

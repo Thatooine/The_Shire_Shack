@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func setupCommunications(serviceProviders ServiceProviders) {
+func setupAPIServer(serviceProviders ServiceProviders) {
 	port := 8080
 
 	router := mux.NewRouter()

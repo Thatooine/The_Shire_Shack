@@ -32,7 +32,7 @@ func main() {
 	}
 
 	// setup the server communications here
-	setupCommunications(*serviceProviders)
+	setupAPIServer(*serviceProviders)
 
 	// shut down signal
 	signals := make(chan os.Signal, 1)
