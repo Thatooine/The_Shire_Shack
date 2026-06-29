@@ -26,13 +26,13 @@ func main() {
 
 	config, secureConfig := GetConfig("")
 
-	app, err := NewApp(ctx, config, secureConfig)
+	dependencies, err := NewDependencies(ctx, config, secureConfig)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create app")
+		log.Fatal().Err(err).Msg("failed to create dependencies")
 	}
 
 	// setup the server communications here
-	setupAPIServer(*app)
+	setupAPIServer(*dependencies)
 
 	// shut down signal
 	signals := make(chan os.Signal, 1)

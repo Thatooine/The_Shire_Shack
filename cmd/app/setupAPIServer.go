@@ -16,7 +16,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func setupAPIServer(app App) {
+func setupAPIServer(dependencies Dependencies) {
 	port := 8080
 
 	router := mux.NewRouter()
@@ -33,38 +33,38 @@ func setupAPIServer(app App) {
 	}).Methods(http.MethodGet)
 
 	// auth routes (unauthenticated)
-	ipRateLimiter := rateLimiting.NewIpRateLimiterMiddleware(app.RateLimiter, 5, time.Minute)
-	emailPasswordAdaptor := authentication.NewEmailAndPasswordAuthenticatorRESTAdaptor(app.EmailAndPasswordAuthenticatorService)
+	ipRateLimiter := rateLimiting.NewIpRateLimiterMiddleware(dependencies.RateLimiter, 5, time.Minute)
+	emailPasswordAdaptor := authentication.NewEmailAndPasswordAuthenticatorRESTAdaptor(dependencies.EmailAndPasswordAuthenticatorService)
 	router.Handle("/api/v1/auth/login", ipRateLimiter(http.HandlerFunc(emailPasswordAdaptor.Login))).Methods(http.MethodPost)
 
-	registrationAdaptor := users.NewUserRegistrationRESTAdaptor(app.UserRegistrationService)
+	registrationAdaptor := users.NewUserRegistrationRESTAdaptor(dependencies.UserRegistrationService)
 	router.HandleFunc("/api/v1/auth/register", registrationAdaptor.RegisterWithEmailAndPassword).Methods(http.MethodPost)
 
 	// authenticated API subrouter
 	api := router.PathPrefix("/api/v1").Subrouter()
-	api.Use(authentication.NewAuthMiddleware(app.AccessTokenValidatorService))
-	api.Use(rateLimiting.NewUserRateLimiterMiddleware(app.RateLimiter, 20, time.Second))
+	api.Use(authentication.NewAuthMiddleware(dependencies.AccessTokenValidatorService))
+	api.Use(rateLimiting.NewUserRateLimiterMiddleware(dependencies.RateLimiter, 20, time.Second))
 
 	// user routes
 
-	userServiceAdaptor := users.NewUserServiceRESTAdaptor(app.UserService)
+	userServiceAdaptor := users.NewUserServiceRESTAdaptor(dependencies.UserService)
 	api.HandleFunc("/users", userServiceAdaptor.ListUsers).Methods(http.MethodGet)
 	api.HandleFunc("/users/search", userServiceAdaptor.SearchUsers).Methods(http.MethodGet)
 	api.HandleFunc("/users/{email}", userServiceAdaptor.GetUser).Methods(http.MethodGet)
 
 	// restaurant routes
 
-	restaurantRegistrationAdaptor := restaurants.NewRestaurantRegistrationRESTAdaptor(app.RestaurantRegistrationService)
+	restaurantRegistrationAdaptor := restaurants.NewRestaurantRegistrationRESTAdaptor(dependencies.RestaurantRegistrationService)
 	api.HandleFunc("/restaurants/register", restaurantRegistrationAdaptor.RegisterRestaurant).Methods(http.MethodPost)
 
-	restaurantServiceAdaptor := restaurants.NewRestaurantServiceRESTAdaptor(app.RestaurantService)
+	restaurantServiceAdaptor := restaurants.NewRestaurantServiceRESTAdaptor(dependencies.RestaurantService)
 	api.HandleFunc("/restaurants", restaurantServiceAdaptor.ListRestaurants).Methods(http.MethodGet)
 	api.HandleFunc("/restaurants/mine", restaurantServiceAdaptor.GetMyRestaurant).Methods(http.MethodGet)
 	api.HandleFunc("/restaurants/search", restaurantServiceAdaptor.SearchRestaurants).Methods(http.MethodGet)
 	api.HandleFunc("/restaurants/{id}", restaurantServiceAdaptor.GetRestaurant).Methods(http.MethodGet)
 
 	// dish routes
-	dishServiceAdaptor := restaurants.NewDishServiceRESTAdaptor(app.DishService)
+	dishServiceAdaptor := restaurants.NewDishServiceRESTAdaptor(dependencies.DishService)
 	api.HandleFunc("/dishes", dishServiceAdaptor.CreateDish).Methods(http.MethodPost)
 	api.HandleFunc("/dishes/{id}", dishServiceAdaptor.UpdateDish).Methods(http.MethodPut)
 	api.HandleFunc("/dishes/{id}", dishServiceAdaptor.DeleteDish).Methods(http.MethodDelete)
@@ -73,7 +73,7 @@ func setupAPIServer(app App) {
 	api.HandleFunc("/dishes/{id}", dishServiceAdaptor.GetDish).Methods(http.MethodGet)
 
 	// rating routes
-	ratingServiceAdaptor := restaurants.NewRatingServiceRESTAdaptor(app.RatingService)
+	ratingServiceAdaptor := restaurants.NewRatingServiceRESTAdaptor(dependencies.RatingService)
 	api.HandleFunc("/dishes/{id}/ratings", ratingServiceAdaptor.SubmitRating).Methods(http.MethodPost)
 	api.HandleFunc("/dishes/{id}/ratings", ratingServiceAdaptor.ListRatings).Methods(http.MethodGet)
 
